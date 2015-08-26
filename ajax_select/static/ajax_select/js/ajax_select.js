@@ -2,12 +2,123 @@
 
 (function ($) {
 
-  $.fn.autocompleteselect = function (options) {
+  var extensionHandlers = {
+        renderGoodPhotos: function(args) {
+          var ul = args[0],
+              item = args[1];
+
+          return $('<li></li>')
+            .data('item.autocomplete', item)
+            .append('<a>' + item.name + ' ' + item.label + '</a>')
+            .appendTo(ul);
+        }
+      },
+      callbackHandlers = {
+        selectGoodPhotos: function() {
+          var $autocomplete = jQuery(this),
+              $document = jQuery(document),
+              args = Array.prototype.slice.call(arguments),
+              context = args[0],
+              params = args[1],
+              data = args[2][1].item,
+              photos = data.photos,
+              instance = $autocomplete.data('uiAutocomplete'),
+              menu = instance.menu.activeMenu,
+              $photosMenu = jQuery('.JS-GoodPhotos').first().clone(),
+              $photosItem = $photosMenu.find('.JS-GoodPhotos-Item').first().clone(),
+              classPreloader = params.classPreloader || '';
+
+          $photosMenu
+            .css({
+              top: menu.css('top'),
+              left: menu.css('left'),
+            });
+
+          function setResult(pk, repr) {
+            context.trigger('didAddPopup', [pk, repr]);
+
+            return false;
+          }
+
+          function closePhotosMenu() {
+            $photosMenu.remove();
+          }
+
+          function buildPhotoes() {
+            var $content = jQuery(''),
+                $switchers,
+                $images,
+                $switcher,
+                $item,
+                imgCount,
+                img,
+                i,
+                l;
+
+            for (i = 0, l = photos.length; i < l; i++) {
+              img = '<img src="' + photos[i].src + '" />';
+              $item = $photosItem.clone();
+              $switcher = $item.find('.JS-GoodPhotos-Switcher').html(img);
+
+              $switcher.data({
+                pk: photos[i].pk,
+                src: photos[i].src
+              });
+
+              $content = $content.add($item);
+            }
+
+            $photosMenu.html($content);
+
+            $switchers = $photosMenu.find('.JS-GoodPhotos-Switcher');
+
+            $switchers.on('click.selectGoodPhotos', function() {
+              var $elem = jQuery(this),
+                  pk = $elem.data('pk'),
+                  repr = '<img src="' + $elem.data('src') + '"> <a href="' + data.link + '" target="_blank">' + data.name + '</a>, <i>' + data.value + '</i>';
+
+              setResult(pk, repr);
+
+              closePhotosMenu();
+            });
+
+            $autocomplete.on('input.selectGoodPhotos', function() {
+              closePhotosMenu(true);
+              $autocomplete.off('input.selectGoodPhotos');
+            });
+
+            $document.on('click.selectGoodPhotos', function(e) {
+              if (!jQuery(e.target).closest($switchers.add(menu)).length) {
+                closePhotosMenu();
+                $document.off('click.selectGoodPhotos');
+              }
+            });
+
+            $images = $switchers.find('img');
+            imgCount = $images.length;
+
+            $images.on('load error', function() {
+              if (!(--imgCount)) {
+                $photosMenu.removeClass(classPreloader);
+              }
+            });
+
+            jQuery('body').append($photosMenu.show());
+          }
+
+          buildPhotoes();
+        }
+      };
+
+  $.fn.autocompleteselect = function (options, callbacks, extensions, params) {
     return this.each(function () {
       var id = this.id,
           $this = $(this),
           $text = $('#' + id + '_text'),
-          $deck = $('#' + id + '_on_deck');
+          $deck = $('#' + id + '_on_deck'),
+          instance,
+          callbackItem,
+          extensionItem;
 
       function receiveResult(event, ui) {
         if ($this.val()) {
@@ -43,7 +154,30 @@
       }
 
       options.select = receiveResult;
+
+      if (Object.keys(callbacks).length) {
+        for (callbackItem in callbacks) {
+          options[callbackItem] = function() {
+            var args = Array.prototype.slice.call(arguments);
+
+            callbackHandlers[callbacks[callbackItem]].apply(this, [$this, params, args]);
+          }
+        }
+      }
+
       $text.autocomplete(options);
+
+      if (Object.keys(extensions).length) {
+        instance = $text.data('uiAutocomplete');
+
+        for (extensionItem in extensions) {
+          instance[extensionItem] = function() {
+            var args = Array.prototype.slice.call(arguments);
+
+            return extensionHandlers[extensions[extensionItem]](args);
+          }
+        }
+      }
 
       if (options.initial) {
         addKiller(options.initial[0], options.initial[1]);
@@ -93,6 +227,7 @@
       }
 
       options.select = receiveResult;
+
       $text.autocomplete(options);
 
       if (options.initial) {
@@ -112,6 +247,9 @@
         html_id = inp.id,
         prefix_id = html_id,
         opts = JSON.parse($inp.attr('data-plugin-options')),
+        extensions = JSON.parse($inp.attr('data-plugin-extensions') || '{}'),
+        callbacks = JSON.parse($inp.attr('data-plugin-callbacks') || '{}'),
+        params = JSON.parse($inp.attr('data-plugin-params') || '{}'),
         prefix = 0;
 
     /* detects inline forms and converts the html_id if needed */
@@ -128,7 +266,7 @@
       }
     }
 
-    callback($inp, opts);
+    callback($inp, opts, callbacks, extensions, params);
   }
 
   // allow html in the results menu
@@ -186,8 +324,8 @@
     });
 
     $('input[data-ajax-select=autocompleteselect]').each(function (i, inp) {
-      addAutoComplete(inp, function ($inp, opts) {
-        $inp.autocompleteselect(opts);
+      addAutoComplete(inp, function ($inp, opts, callbacks, extensions, params) {
+        $inp.autocompleteselect(opts, callbacks, extensions, params);
       });
     });
 

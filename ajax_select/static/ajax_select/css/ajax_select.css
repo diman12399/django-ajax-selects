@@ -44,3 +44,6 @@ ul.ui-autocomplete li a {
 	padding: 2px 3px;
 	cursor: pointer;
 }
+
+.ajaxselect-preloader {width:100px;height:50px;background:#fff url(../images/loading-indicator.gif) center center no-repeat!important;}
+.ajaxselect-preloader .ui-menu-item {display:none;}
