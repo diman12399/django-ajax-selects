@@ -35,14 +35,7 @@ def ajax_lookup(request, channel):
     else:
         instances = []
 
-    results = json.dumps([
-        {
-            'pk': force_text(getattr(item, 'pk', None)),
-            'value': lookup.get_result(item),
-            'match': lookup.format_match(item),
-            'repr': lookup.format_item_display(item)
-        } for item in instances
-    ])
+    results = json.dumps(lookup.dump_instances(instances))
 
     return HttpResponse(results, content_type='application/javascript')
 

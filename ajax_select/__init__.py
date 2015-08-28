@@ -71,6 +71,14 @@ class LookupChannel(object):
         if not request.user.is_staff:
             raise PermissionDenied
 
+    def dump_instances(self, instances):
+        return [{
+                    'pk': force_text(getattr(item, 'pk', None)),
+                    'value': self.get_result(item),
+                    'match': self.format_match(item),
+                    'repr': self.format_item_display(item),
+                } for item in instances ]
+
 
 def make_ajax_form(model, fieldlist, superclass=ModelForm, show_help_text=False, **kwargs):
     """ Creates a ModelForm subclass with autocomplete fields
