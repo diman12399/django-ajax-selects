@@ -1,7 +1,6 @@
 'use strict';
 
 (function ($) {
-
   var extensionHandlers = {
         renderGoodPhotos: function(args) {
           var ul = args[0],
@@ -311,7 +310,6 @@
 
   // activate any on page
   $(window).bind('init-autocomplete', function () {
-
     $('input[data-ajax-select=autocomplete]').each(function (i, inp) {
       addAutoComplete(inp, function ($inp, opts) {
         opts.select =
@@ -341,7 +339,7 @@
     // if dynamically injecting forms onto a page
     // you can trigger them to be ajax-selects-ified:
     $(window).trigger('init-autocomplete');
-    $('.inline-group ul.tools a.add, .inline-group div.add-row a, .inline-group .tabular tr.add-row td a, .grp-dynamic-form a.grp-add-handler').on('click', function() {
+    $(document).on('click', '.inline-group ul.tools a.add, .inline-group div.add-row a, .inline-group .tabular tr.add-row td a, .grp-dynamic-form a.grp-add-handler', function() {
       $(window).trigger('init-autocomplete');
     });
   });
