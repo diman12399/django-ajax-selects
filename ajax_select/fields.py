@@ -425,5 +425,6 @@ def plugin_options(channel, channel_name, widget_plugin_options, initial):
         'data_plugin_options': force_escape(json.dumps(po)),
         # continue to support any custom templates that still expect these
         'lookup_url': po['source'],
-        'min_length': po['min_length']
+        'min_length': po['min_length'],
+        'extra_plugin_data': getattr(channel, 'extra_plugin_data', ''),
         }
